@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tavelvägg – Förhandsvisa ditt fotografi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --coal: #141414;
+  --panel: #1c1c1c;
+  --border: #2e2e2e;
+  --text: #e8e2d9;
+  --muted: #7a7570;
+  --gold: #c9a96e;
+  --gold-dim: #8a6f42;
+  --panel-w: 210px;
+}
+
+html, body { height: 100%; overflow: hidden; background: var(--coal); color: var(--text); font-family: 'Inter', sans-serif; }
+
+#app { display: flex; height: 100vh; }
+
+/* ── SIDEBAR ── */
+#sidebar {
+  width: var(--panel-w);
+  min-width: var(--panel-w);
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 10;
+  flex-shrink: 0;
+}
+#sidebar::-webkit-scrollbar { width: 3px; }
+#sidebar::-webkit-scrollbar-thumb { background: var(--border); }
+
+.logo { padding: 16px 16px 12px; border-bottom: 1px solid var(--border); }
+.logo h1 { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-size: 1.1rem; letter-spacing: 0.12em; color: var(--gold); text-transform: uppercase; }
+.logo p  { font-size: 0.6rem; color: var(--muted); letter-spacing: 0.08em; margin-top: 2px; text-transform: uppercase; }
+
+.sec { padding: 13px 16px; border-bottom: 1px solid var(--border); }
+.sec-label { font-size: 0.58rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 9px; }
+
+/* Room switcher */
+.room-row { display: flex; gap: 5px; }
+.room-btn {
+  flex: 1; background: transparent; border: 1px solid var(--border);
+  border-radius: 3px; color: var(--muted); font-size: 0.62rem;
+  padding: 6px 4px; cursor: pointer; text-align: center;
+  transition: all .15s; line-height: 1.4;
+}
+.room-btn:hover { border-color: var(--gold-dim); color: var(--text); }
+.room-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(201,169,110,.08); }
+.room-thumb {
+  width: 100%; aspect-ratio: 16/9; object-fit: cover;
+  border-radius: 2px; margin-bottom: 4px; display: block;
+  background: #2a2a2a;
+}
+
+/* Upload zone */
+#upload-zone {
+  border: 1px dashed var(--border); border-radius: 4px;
+  padding: 14px 8px; text-align: center; cursor: pointer;
+  transition: border-color .2s, background .2s;
+}
+#upload-zone:hover, #upload-zone.drag { border-color: var(--gold); background: rgba(201,169,110,.05); }
+#upload-zone svg { opacity: .5; }
+#upload-zone p { font-size: 0.63rem; color: var(--muted); margin-top: 5px; line-height: 1.5; }
+#file-input { display: none; }
+
+/* Size grid */
+.size-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.size-btn {
+  background: transparent; border: 1px solid var(--border);
+  border-radius: 3px; color: var(--text); font-family: 'Inter', sans-serif;
+  font-size: 0.63rem; padding: 6px 3px; cursor: pointer;
+  text-align: center; transition: all .15s; line-height: 1.3;
+}
+.size-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
+.size-btn.active { border-color: var(--gold); background: rgba(201,169,110,.1); color: var(--gold); }
+.size-btn .dims { display: block; font-size: 0.7rem; font-weight: 500; }
+.size-btn .lbl  { display: block; font-size: 0.56rem; color: var(--muted); margin-top: 1px; }
+
+.custom-row { display: flex; gap: 5px; margin-top: 6px; align-items: center; }
+.custom-row input {
+  width: 56px; background: var(--coal); border: 1px solid var(--border);
+  border-radius: 3px; color: var(--text); font-size: 0.65rem;
+  padding: 5px 6px; font-family: 'Inter', sans-serif;
+}
+.custom-row input:focus { outline: none; border-color: var(--gold-dim); }
+.custom-row span { font-size: 0.62rem; color: var(--muted); }
+
+/* Orientation */
+.orient-row { display: flex; gap: 5px; }
+.orient-btn {
+  flex: 1; background: transparent; border: 1px solid var(--border);
+  border-radius: 3px; color: var(--muted); font-size: 0.62rem;
+  padding: 7px 4px; cursor: pointer; display: flex;
+  align-items: center; justify-content: center; gap: 4px; transition: all .15s;
+}
+.orient-btn:hover { border-color: var(--gold-dim); color: var(--text); }
+.orient-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(201,169,110,.08); }
+
+/* Frame */
+.frame-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 4px; }
+.frame-btn {
+  background: transparent; border: 1px solid var(--border);
+  border-radius: 3px; color: var(--muted); font-size: 0.58rem;
+  padding: 7px 3px; cursor: pointer; text-align: center; transition: all .15s;
+}
+.frame-btn:hover { border-color: var(--gold-dim); color: var(--text); }
+.frame-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(201,169,110,.08); }
+.fp { width: 26px; height: 20px; margin: 0 auto 3px; border-radius: 1px; display: flex; align-items: center; justify-content: center; }
+.fi { width: 16px; height: 12px; background: #888; border-radius: 1px; }
+
+/* Wall colors */
+.wall-colors { display: flex; gap: 5px; flex-wrap: wrap; }
+.wswatch {
+  width: 26px; height: 26px; border-radius: 50%; cursor: pointer;
+  border: 2px solid transparent; transition: all .15s; position: relative;
+}
+.wswatch.active { border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold); }
+
+/* Toggles */
+.toggle-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px; }
+.toggle-row label { font-size: 0.65rem; color: var(--muted); cursor: pointer; }
+.toggle {
+  width: 30px; height: 16px; background: var(--border); border-radius: 8px;
+  position: relative; cursor: pointer; transition: background .2s; border: none; flex-shrink: 0;
+}
+.toggle.on { background: var(--gold-dim); }
+.toggle::after {
+  content: ''; width: 12px; height: 12px; background: white;
+  border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: left .2s;
+}
+.toggle.on::after { left: 16px; }
+
+.ctrl-row { display: flex; gap: 5px; }
+.ctrl-btn {
+  flex: 1; background: transparent; border: 1px solid var(--border);
+  border-radius: 3px; color: var(--muted); font-size: 0.68rem;
+  padding: 6px; cursor: pointer; transition: all .15s;
+  display: flex; align-items: center; justify-content: center; gap: 3px;
+}
+.ctrl-btn:hover { border-color: var(--gold-dim); color: var(--text); }
+
+#info-panel {
+  padding: 12px 16px; margin-top: auto; border-top: 1px solid var(--border);
+  font-size: 0.6rem; color: var(--muted); line-height: 1.8;
+}
+#info-panel strong { color: var(--text); font-weight: 500; }
+
+#save-btn {
+  margin: 8px 16px 14px; width: calc(100% - 32px);
+  background: transparent; border: 1px solid var(--gold-dim);
+  border-radius: 3px; color: var(--gold); font-family: 'Cormorant Garamond', serif;
+  font-size: 0.78rem; letter-spacing: 0.1em; padding: 8px;
+  cursor: pointer; text-transform: uppercase; transition: all .2s;
+}
+#save-btn:hover { background: rgba(201,169,110,.1); border-color: var(--gold); }
+
+/* ── MAIN ── */
+#main { flex: 1; position: relative; overflow: hidden; background: #0e0e0e; }
+
+/* Room container — fills main */
+#room-wrap {
+  width: 100%; height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Photo room background */
+#room-photo {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  display: block;
+  position: absolute; inset: 0;
+}
+
+/* SVG fallback room */
+#room-svg {
+  width: 100%; height: 100%;
+  display: block;
+  position: absolute; inset: 0;
+}
+
+/* Artwork */
+#artwork-wrapper {
+  position: absolute;
+  cursor: grab;
+  touch-action: none;
+  z-index: 5;
+}
+#artwork-wrapper:active { cursor: grabbing; }
+#artwork-wrapper.no-image { cursor: default; }
+#artwork-inner { width: 100%; height: 100%; position: relative; overflow: hidden; }
+#artwork-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+#artwork-placeholder {
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; background: rgba(240,235,228,.12);
+  border: 2px dashed rgba(201,169,110,.3); color: rgba(201,169,110,.5);
+  font-family: 'Cormorant Garamond', serif; font-size: 0.85rem;
+  letter-spacing: .08em; gap: 5px; cursor: pointer; transition: all .2s;
+}
+#artwork-placeholder:hover { background: rgba(240,235,228,.18); border-color: rgba(201,169,110,.5); }
+
+/* Measurements SVG */
+#measurements { position: absolute; pointer-events: none; inset: 0; z-index: 6; }
+.meas-line { stroke: rgba(201,169,110,.75); stroke-width: 1; fill: none; stroke-dasharray: 4 3; }
+.meas-text { fill: rgba(201,169,110,.95); font-size: 11px; font-family: 'Inter', sans-serif; font-weight: 500; }
+.meas-cap  { stroke: rgba(201,169,110,.75); stroke-width: 1.2; fill: none; }
+
+/* Grid */
+#grid-overlay {
+  position: absolute; pointer-events: none; inset: 0; display: none; z-index: 4;
+  background-image: linear-gradient(rgba(201,169,110,.07) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(201,169,110,.07) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+#grid-overlay.on { display: block; }
+
+/* UI overlays */
+#zoom-bar {
+  position: absolute; bottom: 16px; right: 16px;
+  display: flex; gap: 2px; background: rgba(20,20,20,.88);
+  border: 1px solid var(--border); border-radius: 4px;
+  overflow: hidden; backdrop-filter: blur(8px); z-index: 10;
+}
+.zoom-btn {
+  background: transparent; border: none; color: var(--muted);
+  font-size: 1rem; width: 32px; height: 32px; cursor: pointer;
+  transition: color .15s; display: flex; align-items: center; justify-content: center;
+}
+.zoom-btn:hover { color: var(--gold); }
+#zoom-label {
+  font-size: 0.58rem; color: var(--muted); padding: 0 8px;
+  display: flex; align-items: center; letter-spacing: .05em;
+  border-left: 1px solid var(--border); border-right: 1px solid var(--border);
+  min-width: 40px; justify-content: center;
+}
+
+#bottom-bar {
+  position: absolute; bottom: 16px; left: 16px;
+  background: rgba(20,20,20,.82); border: 1px solid var(--border);
+  border-radius: 4px; padding: 7px 12px; font-size: 0.6rem; color: var(--muted);
+  backdrop-filter: blur(8px); line-height: 1.8; z-index: 10;
+}
+#bottom-bar strong { color: var(--gold); font-weight: 500; }
+
+#fs-btn {
+  position: absolute; top: 12px; right: 12px;
+  background: rgba(20,20,20,.82); border: 1px solid var(--border);
+  border-radius: 4px; color: var(--muted); font-size: 0.7rem;
+  padding: 5px 9px; cursor: pointer; backdrop-filter: blur(8px);
+  transition: color .15s; display: flex; align-items: center; gap: 4px; z-index: 10;
+}
+#fs-btn:hover { color: var(--gold); border-color: var(--gold-dim); }
+
+#drag-hint {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  background: rgba(20,20,20,.78); border: 1px solid var(--border);
+  border-radius: 20px; padding: 5px 14px; font-size: 0.58rem; color: var(--muted);
+  pointer-events: none; backdrop-filter: blur(6px); z-index: 10;
+  opacity: 0; transition: opacity .4s;
+}
+#drag-hint.show { opacity: 1; }
+
+/* Mobile */
+@media (max-width: 600px) {
+  :root { --panel-w: 160px; }
+  .size-grid { grid-template-columns: 1fr; }
+  .frame-grid { grid-template-columns: repeat(2,1fr); }
+}
+@media (max-width: 420px) {
+  :root { --panel-w: 140px; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ── SIDEBAR ── -->
+<aside id="sidebar">
+  <div class="logo">
+    <h1>Tavelvägg</h1>
+    <p>Förhandsvisa i skala</p>
+  </div>
+
+  <!-- Room selector -->
+  <div class="sec">
+    <div class="sec-label">Välj rum</div>
+    <div class="room-row">
+      <button class="room-btn active" id="rbtn1" onclick="switchRoom(1)">
+        <img class="room-thumb" id="rthumb1" src="images/rum1.jpg" alt="Rum 1"
+             onerror="this.style.display='none'">
+        Rum 1
+      </button>
+      <button class="room-btn" id="rbtn2" onclick="switchRoom(2)">
+        <img class="room-thumb" id="rthumb2" src="images/rum2.jpg" alt="Rum 2"
+             onerror="this.style.display='none'">
+        Rum 2
+      </button>
+    </div>
+  </div>
+
+  <!-- Upload photo -->
+  <div class="sec">
+    <div class="sec-label">Motiv</div>
+    <div id="upload-zone" onclick="document.getElementById('file-input').click()">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 4v12M8 8l4-4 4 4"/>
+      </svg>
+      <p>Ladda upp bild<br><span style="font-size:.58rem;opacity:.6">PNG · JPG · WEBP</span></p>
+    </div>
+    <input type="file" id="file-input" accept="image/*">
+  </div>
+
+  <!-- Size -->
+  <div class="sec">
+    <div class="sec-label">Storlek</div>
+    <div class="size-grid" id="size-grid">
+      <button class="size-btn" data-w="20" data-h="30"><span class="dims">20×30</span><span class="lbl">cm</span></button>
+      <button class="size-btn active" data-w="30" data-h="40"><span class="dims">30×40</span><span class="lbl">cm</span></button>
+      <button class="size-btn" data-w="40" data-h="50"><span class="dims">40×50</span><span class="lbl">cm</span></button>
+      <button class="size-btn" data-w="50" data-h="70"><span class="dims">50×70</span><span class="lbl">cm</span></button>
+      <button class="size-btn" data-w="60" data-h="90"><span class="dims">60×90</span><span class="lbl">cm</span></button>
+      <button class="size-btn" data-w="70" data-h="100"><span class="dims">70×100</span><span class="lbl">cm</span></button>
+      <button class="size-btn" data-w="100" data-h="150"><span class="dims">100×150</span><span class="lbl">cm</span></button>
+    </div>
+    <div class="custom-row">
+      <input type="number" id="cw" placeholder="B" min="10" max="300">
+      <span>×</span>
+      <input type="number" id="ch" placeholder="H" min="10" max="300">
+      <span>cm</span>
+    </div>
+  </div>
+
+  <!-- Orientation -->
+  <div class="sec">
+    <div class="sec-label">Format</div>
+    <div class="orient-row">
+      <button class="orient-btn active" id="btn-portrait"  onclick="setOrientation('portrait')">🖼 Stående</button>
+      <button class="orient-btn"        id="btn-landscape" onclick="setOrientation('landscape')">🖼 Liggande</button>
+    </div>
+  </div>
+
+  <!-- Frame -->
+  <div class="sec">
+    <div class="sec-label">Ram</div>
+    <div class="frame-grid" id="frame-grid">
+      <button class="frame-btn active" data-frame="none">
+        <div class="fp" style="border:1px dashed #444"><div class="fi"></div></div>Ingen
+      </button>
+      <button class="frame-btn" data-frame="black">
+        <div class="fp" style="border:4px solid #111;padding:1px"><div class="fi"></div></div>Svart
+      </button>
+      <button class="frame-btn" data-frame="white">
+        <div class="fp" style="border:4px solid #e8e0d5;padding:1px"><div class="fi"></div></div>Vit
+      </button>
+      <button class="frame-btn" data-frame="oak">
+        <div class="fp" style="border:4px solid #c8a060;padding:1px"><div class="fi"></div></div>Ek
+      </button>
+      <button class="frame-btn" data-frame="walnut">
+        <div class="fp" style="border:4px solid #5c3a1e;padding:1px"><div class="fi"></div></div>Valnöt
+      </button>
+      <button class="frame-btn" data-frame="passe">
+        <div class="fp" style="border:3px solid #333;padding:3px;background:#f0ebe4"><div class="fi" style="width:10px;height:8px"></div></div>Pass.
+      </button>
+    </div>
+  </div>
+
+  <!-- Wall color (only for SVG rooms) -->
+  <div class="sec" id="wall-color-sec">
+    <div class="sec-label">Väggfärg (SVG)</div>
+    <div class="wall-colors" id="wall-colors">
+      <div class="wswatch active" style="background:#f0ebe4" data-color="#f0ebe4"></div>
+      <div class="wswatch" style="background:#e0dbd2" data-color="#e0dbd2"></div>
+      <div class="wswatch" style="background:#cbc5bc" data-color="#cbc5bc"></div>
+      <div class="wswatch" style="background:#2c3440" data-color="#2c3440"></div>
+      <div class="wswatch" style="background:#1e1e1e" data-color="#1e1e1e"></div>
+    </div>
+  </div>
+
+  <!-- Toggles -->
+  <div class="sec">
+    <div class="toggle-row">
+      <label>Visa mått</label>
+      <button class="toggle on" id="t-meas" onclick="toggleMeas()"></button>
+    </div>
+    <div class="toggle-row">
+      <label>Rutnät</label>
+      <button class="toggle" id="t-grid" onclick="toggleGrid()"></button>
+    </div>
+    <div class="ctrl-row">
+      <button class="ctrl-btn" onclick="resetAll()">↺ Återställ</button>
+    </div>
+  </div>
+
+  <div id="info-panel">
+    <strong id="info-size">30 × 40 cm</strong><br>
+    Avstånd: <span id="info-dist">~1.5 m</span><br>
+    Rel. vägg: <span id="info-pct">8%</span>
+  </div>
+
+  <button id="save-btn" onclick="saveImage()">⬇ Spara bild</button>
+</aside>
+
+<!-- ── MAIN ── -->
+<div id="main">
+  <div id="room-wrap">
+
+    <!-- Photo rooms (shown when image loads) -->
+    <img id="room-photo" src="images/rum1.jpg" alt="Rum"
+         onerror="roomPhotoError(this)"
+         style="display:none">
+
+    <!-- SVG fallback rooms (two separate SVGs) -->
+    <svg id="room-svg" xmlns="http://www.w3.org/2000/svg"
+         viewBox="0 0 1200 750" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <linearGradient id="fg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#c8a97a"/>
+          <stop offset="100%" stop-color="#a07840"/>
+        </linearGradient>
+        <linearGradient id="wg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="rgba(0,0,0,.08)"/>
+          <stop offset="60%" stop-color="rgba(0,0,0,0)"/>
+          <stop offset="100%" stop-color="rgba(0,0,0,.04)"/>
+        </linearGradient>
+        <radialGradient id="cg" cx="50%" cy="0%" r="55%">
+          <stop offset="0%" stop-color="rgba(255,248,235,.2)"/>
+          <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+        </radialGradient>
+        <pattern id="wood" x="0" y="0" width="80" height="14" patternUnits="userSpaceOnUse">
+          <rect width="80" height="14" fill="url(#fg)"/>
+          <line x1="0" y1="7" x2="80" y2="7" stroke="rgba(0,0,0,.07)" stroke-width=".5"/>
+          <line x1="20" y1="0" x2="20" y2="14" stroke="rgba(0,0,0,.04)" stroke-width=".3"/>
+          <line x1="60" y1="0" x2="60" y2="14" stroke="rgba(0,0,0,.04)" stroke-width=".3"/>
+        </pattern>
+        <pattern id="rug1" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
+          <rect width="60" height="60" fill="#7a1c1c"/>
+          <rect x="4" y="4" width="52" height="52" fill="#162038" opacity=".55"/>
+          <circle cx="30" cy="30" r="11" fill="none" stroke="#c0502a" stroke-width="2" opacity=".65"/>
+          <circle cx="30" cy="30" r="5" fill="#7a1c1c" opacity=".7"/>
+          <rect x="8"  y="8"  width="4" height="4" fill="#c0502a" opacity=".5"/>
+          <rect x="48" y="8"  width="4" height="4" fill="#c0502a" opacity=".5"/>
+          <rect x="8"  y="48" width="4" height="4" fill="#c0502a" opacity=".5"/>
+          <rect x="48" y="48" width="4" height="4" fill="#c0502a" opacity=".5"/>
+        </pattern>
+        <!-- Room 2: lighter parquet, different rug -->
+        <linearGradient id="fg2" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#e8d4a8"/>
+          <stop offset="100%" stop-color="#c8a870"/>
+        </linearGradient>
+        <pattern id="wood2" x="0" y="0" width="100" height="18" patternUnits="userSpaceOnUse">
+          <rect width="100" height="18" fill="url(#fg2)"/>
+          <line x1="0" y1="9" x2="100" y2="9" stroke="rgba(0,0,0,.06)" stroke-width=".5"/>
+          <line x1="33" y1="0" x2="33" y2="18" stroke="rgba(0,0,0,.04)" stroke-width=".3"/>
+          <line x1="66" y1="0" x2="66" y2="18" stroke="rgba(0,0,0,.04)" stroke-width=".3"/>
+        </pattern>
+        <pattern id="rug2" x="0" y="0" width="50" height="50" patternUnits="userSpaceOnUse">
+          <rect width="50" height="50" fill="#2a3f2a"/>
+          <rect x="4" y="4" width="42" height="42" fill="#4a6040" opacity=".4"/>
+          <line x1="25" y1="0" x2="25" y2="50" stroke="#8ab060" stroke-width=".8" opacity=".4"/>
+          <line x1="0" y1="25" x2="50" y2="25" stroke="#8ab060" stroke-width=".8" opacity=".4"/>
+          <circle cx="25" cy="25" r="8" fill="none" stroke="#c8a060" stroke-width="1.5" opacity=".5"/>
+        </pattern>
+      </defs>
+
+      <!-- ROOM 1 group -->
+      <g id="svg-room1">
+        <rect id="svg-wall" x="0" y="0" width="1200" height="570" fill="#f0ebe4"/>
+        <rect x="0" y="0" width="1200" height="570" fill="url(#wg)"/>
+        <rect x="0" y="0" width="1200" height="570" fill="url(#cg)"/>
+        <!-- Spotlights -->
+        <ellipse cx="280" cy="8" rx="55" ry="7" fill="rgba(255,248,220,.5)"/>
+        <ellipse cx="680" cy="8" rx="55" ry="7" fill="rgba(255,248,220,.45)"/>
+        <ellipse cx="1020" cy="8" rx="45" ry="6" fill="rgba(255,248,220,.4)"/>
+        <ellipse cx="280" cy="190" rx="130" ry="250" fill="rgba(255,248,235,.09)"/>
+        <ellipse cx="680" cy="175" rx="120" ry="240" fill="rgba(255,248,235,.07)"/>
+        <ellipse cx="1020" cy="210" rx="110" ry="230" fill="rgba(255,248,235,.07)"/>
+        <!-- Floor -->
+        <rect x="0" y="570" width="1200" height="180" fill="url(#wood)"/>
+        <rect x="0" y="558" width="1200" height="18" fill="rgba(0,0,0,.12)"/>
+        <!-- Rug -->
+        <polygon points="210,638 990,638 1048,728 152,728" fill="url(#rug1)" opacity=".88"/>
+        <polygon points="210,638 990,638 1048,728 152,728" fill="none" stroke="#c8a060" stroke-width="2.5" opacity=".4"/>
+        <polygon points="230,642 970,642 1024,724 176,724" fill="none" stroke="#c8a060" stroke-width="1" opacity=".25"/>
+        <!-- Sideboard -->
+        <rect x="380" y="517" width="440" height="6" rx="2" fill="#3a2010"/>
+        <rect x="390" y="523" width="420" height="47" rx="3" fill="#4a2c14"/>
+        <rect x="405" y="570" width="8" height="24" rx="2" fill="#3a2010"/>
+        <rect x="787" y="570" width="8" height="24" rx="2" fill="#3a2010"/>
+        <rect x="490" y="570" width="6" height="24" rx="2" fill="#3a2010"/>
+        <rect x="704" y="570" width="6" height="24" rx="2" fill="#3a2010"/>
+        <line x1="540" y1="527" x2="540" y2="565" stroke="rgba(0,0,0,.22)" stroke-width="1.5"/>
+        <line x1="600" y1="527" x2="600" y2="565" stroke="rgba(0,0,0,.22)" stroke-width="1.5"/>
+        <line x1="660" y1="527" x2="660" y2="565" stroke="rgba(0,0,0,.22)" stroke-width="1.5"/>
+        <line x1="720" y1="527" x2="720" y2="565" stroke="rgba(0,0,0,.22)" stroke-width="1.5"/>
+        <line x1="568" y1="545" x2="572" y2="545" stroke="rgba(200,160,96,.6)" stroke-width="2" stroke-linecap="round"/>
+        <line x1="628" y1="545" x2="632" y2="545" stroke="rgba(200,160,96,.6)" stroke-width="2" stroke-linecap="round"/>
+        <line x1="688" y1="545" x2="692" y2="545" stroke="rgba(200,160,96,.6)" stroke-width="2" stroke-linecap="round"/>
+        <!-- Table lamp -->
+        <path d="M466,520 Q480,488 494,520" fill="rgba(240,230,200,.55)" stroke="rgba(200,180,140,.4)" stroke-width=".5"/>
+        <rect x="478" y="520" width="4" height="10" fill="rgba(180,140,100,.7)"/>
+        <ellipse cx="480" cy="520" rx="20" ry="6" fill="rgba(220,200,160,.3)"/>
+        <!-- Vase -->
+        <rect x="730" y="502" width="14" height="21" rx="7" fill="rgba(55,38,28,.85)"/>
+        <!-- Books -->
+        <rect x="758" y="511" width="8" height="14" rx="1" fill="rgba(90,70,55,.65)" transform="rotate(-3,762,518)"/>
+        <rect x="768" y="510" width="7" height="15" rx="1" fill="rgba(70,55,42,.7)" transform="rotate(2,771,517)"/>
+        <!-- Plant left -->
+        <ellipse cx="100" cy="594" rx="36" ry="11" fill="rgba(140,110,80,.6)"/>
+        <path d="M66,558 Q64,594 76,594 L124,594 Q136,594 134,558 Z" fill="rgba(155,122,88,.78)"/>
+        <path d="M100,552 Q84,518 68,478 Q79,498 100,508 Q88,488 100,458 Q112,488 100,508 Q121,498 132,478 Q116,518 100,552" fill="rgba(95,118,75,.82)"/>
+        <path d="M100,542 Q75,508 63,466" stroke="rgba(75,98,58,.7)" stroke-width="2" fill="none"/>
+        <ellipse cx="63" cy="466" rx="13" ry="7" fill="rgba(98,128,72,.72)" transform="rotate(-30,63,466)"/>
+        <path d="M100,538 Q126,506 137,463" stroke="rgba(75,98,58,.7)" stroke-width="2" fill="none"/>
+        <ellipse cx="137" cy="463" rx="13" ry="7" fill="rgba(98,128,72,.72)" transform="rotate(30,137,463)"/>
+        <!-- Tropical plant right -->
+        <ellipse cx="1128" cy="588" rx="29" ry="10" fill="rgba(55,46,38,.75)"/>
+        <path d="M1101,558 Q1099,588 1107,588 L1149,588 Q1157,588 1155,558 Z" fill="rgba(65,54,44,.82)"/>
+        <path d="M1128,552 Q1158,508 1188,468" stroke="rgba(58,98,58,.8)" stroke-width="3" fill="none"/>
+        <path d="M1188,468 Q1198,453 1173,460" fill="rgba(78,128,72,.78)"/>
+        <path d="M1128,552 Q1093,507 1063,468" stroke="rgba(58,98,58,.75)" stroke-width="2.5" fill="none"/>
+        <path d="M1063,468 Q1048,453 1073,461" fill="rgba(78,128,72,.75)"/>
+        <path d="M1128,542 Q1153,508 1170,478" stroke="rgba(58,98,58,.65)" stroke-width="2" fill="none"/>
+        <path d="M1170,478 Q1180,464 1156,471" fill="rgba(88,138,78,.65)"/>
+        <path d="M1128,542 Q1106,510 1088,482" stroke="rgba(58,98,58,.62)" stroke-width="2" fill="none"/>
+        <path d="M1088,482 Q1078,468 1100,474" fill="rgba(88,138,78,.62)"/>
+        <!-- Chair right -->
+        <ellipse cx="1088" cy="643" rx="73" ry="14" fill="rgba(0,0,0,.15)"/>
+        <path d="M1028,598 Q1023,638 1023,658" stroke="#c8a060" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M1153,598 Q1156,638 1158,658" stroke="#c8a060" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M1038,638 Q1023,658 1013,678" stroke="#c8a060" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path d="M1146,640 Q1160,658 1166,678" stroke="#c8a060" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <ellipse cx="1088" cy="598" rx="66" ry="21" fill="rgba(218,198,172,.87)"/>
+        <path d="M1023,558 Q1018,598 1028,598 L1153,598 Q1160,598 1156,557 Q1088,538 1023,558Z" fill="rgba(213,193,168,.92)"/>
+        <path d="M1023,558 Q1008,573 1010,608" stroke="rgba(208,183,158,.7)" stroke-width="8" fill="none" stroke-linecap="round"/>
+        <ellipse cx="1088" cy="573" rx="48" ry="17" fill="rgba(168,143,108,.62)"/>
+        <!-- Floor lamp -->
+        <line x1="998" y1="568" x2="1003" y2="248" stroke="rgba(28,28,28,.88)" stroke-width="3"/>
+        <path d="M983,248 Q1003,228 1023,248 L1013,283 Q1003,288 993,283Z" fill="rgba(22,22,22,.92)"/>
+        <ellipse cx="1003" cy="268" rx="38" ry="28" fill="rgba(255,240,200,.06)"/>
+        <!-- Curtain -->
+        <path d="M0,0 L18,0 Q38,100 22,250 Q32,400 18,570 L0,570Z" fill="rgba(218,208,192,.28)"/>
+      </g>
+
+      <!-- ROOM 2 group (different aesthetic: brighter, Scandinavian) -->
+      <g id="svg-room2" style="display:none">
+        <rect id="svg-wall2" x="0" y="0" width="1200" height="570" fill="#e8e4df"/>
+        <rect x="0" y="0" width="1200" height="570" fill="url(#wg)"/>
+        <!-- Subtle horizontal paneling -->
+        <line x1="0" y1="380" x2="1200" y2="380" stroke="rgba(0,0,0,.04)" stroke-width="1"/>
+        <line x1="0" y1="190" x2="1200" y2="190" stroke="rgba(0,0,0,.03)" stroke-width="1"/>
+        <!-- Large window light left -->
+        <rect x="0" y="0" width="200" height="570" fill="rgba(255,250,235,.12)"/>
+        <rect x="0" y="60" width="90" height="400" fill="rgba(255,250,235,.08)" rx="2"/>
+        <!-- Lighter floor -->
+        <rect x="0" y="570" width="1200" height="180" fill="url(#wood2)"/>
+        <rect x="0" y="558" width="1200" height="18" fill="rgba(0,0,0,.08)"/>
+        <!-- Green rug -->
+        <polygon points="180,635 1020,635 1075,725 125,725" fill="url(#rug2)" opacity=".82"/>
+        <polygon points="180,635 1020,635 1075,725 125,725" fill="none" stroke="#8a9a60" stroke-width="2" opacity=".5"/>
+        <!-- White/light sofa -->
+        <rect x="300" y="525" width="600" height="50" rx="6" fill="rgba(235,230,222,.92)"/>
+        <rect x="295" y="505" width="610" height="28" rx="5" fill="rgba(228,222,214,.95)"/>
+        <!-- Back cushions -->
+        <rect x="310" y="510" width="150" height="25" rx="4" fill="rgba(215,208,198,.9)"/>
+        <rect x="475" y="510" width="150" height="25" rx="4" fill="rgba(215,208,198,.9)"/>
+        <rect x="640" y="510" width="150" height="25" rx="4" fill="rgba(215,208,198,.9)"/>
+        <!-- Sofa legs -->
+        <rect x="310" y="575" width="10" height="16" rx="3" fill="rgba(180,150,100,.8)"/>
+        <rect x="880" y="575" width="10" height="16" rx="3" fill="rgba(180,150,100,.8)"/>
+        <!-- Coffee table -->
+        <ellipse cx="600" cy="608" rx="130" ry="22" fill="rgba(200,175,130,.75)"/>
+        <ellipse cx="600" cy="605" rx="130" ry="20" fill="rgba(210,185,138,.85)"/>
+        <line x1="540" y1="605" x2="540" y2="630" stroke="rgba(180,150,100,.7)" stroke-width="3"/>
+        <line x1="660" y1="605" x2="660" y2="630" stroke="rgba(180,150,100,.7)" stroke-width="3"/>
+        <!-- Books on table -->
+        <rect x="570" y="597" width="40" height="6" rx="1" fill="rgba(80,100,120,.6)"/>
+        <rect x="575" y="592" width="30" height="5" rx="1" fill="rgba(120,80,60,.5)"/>
+        <!-- Tall bookshelf right -->
+        <rect x="1080" y="200" width="110" height="370" rx="2" fill="rgba(200,178,145,.7)"/>
+        <rect x="1080" y="200" width="110" height="4"   rx="1" fill="rgba(170,148,115,.9)"/>
+        <rect x="1080" y="280" width="110" height="3"   fill="rgba(170,148,115,.6)"/>
+        <rect x="1080" y="360" width="110" height="3"   fill="rgba(170,148,115,.6)"/>
+        <rect x="1080" y="440" width="110" height="3"   fill="rgba(170,148,115,.6)"/>
+        <!-- Books on shelves (colorful) -->
+        <rect x="1085" y="207" width="10" height="68" fill="rgba(180,60,60,.7)"/>
+        <rect x="1097" y="207" width="8"  height="68" fill="rgba(60,90,160,.7)"/>
+        <rect x="1107" y="207" width="12" height="68" fill="rgba(60,150,80,.7)"/>
+        <rect x="1121" y="207" width="9"  height="68" fill="rgba(200,160,40,.7)"/>
+        <rect x="1085" y="286" width="11" height="70" fill="rgba(120,60,140,.6)"/>
+        <rect x="1098" y="286" width="8"  height="70" fill="rgba(200,100,40,.7)"/>
+        <rect x="1108" y="286" width="14" height="70" fill="rgba(50,120,160,.6)"/>
+        <!-- Floor lamp left (arched) -->
+        <path d="M160,568 Q158,400 240,340 Q260,330 280,340" stroke="rgba(40,35,30,.8)" stroke-width="3.5" fill="none"/>
+        <ellipse cx="280" cy="342" rx="30" ry="20" fill="rgba(35,30,25,.85)"/>
+        <ellipse cx="280" cy="350" rx="22" ry="12" fill="rgba(255,240,200,.1)"/>
+        <ellipse cx="158" cy="568" rx="18" ry="6" fill="rgba(0,0,0,.2)"/>
+        <!-- Small plant left -->
+        <ellipse cx="82" cy="590" rx="22" ry="7" fill="rgba(100,80,55,.7)"/>
+        <path d="M62,568 Q60,590 70,590 L94,590 Q104,590 102,568 Z" fill="rgba(110,88,62,.8)"/>
+        <circle cx="82" cy="552" r="18" fill="rgba(78,118,60,.8)"/>
+        <circle cx="72" cy="545" r="12" fill="rgba(88,128,68,.75)"/>
+        <circle cx="90" cy="543" r="14" fill="rgba(82,122,63,.78)"/>
+        <!-- Abstract art piece on wall (room 2 has a small existing artwork) -->
+        <rect x="920" y="120" width="80" height="110" fill="rgba(240,236,230,.95)" stroke="rgba(180,160,130,.4)" stroke-width="2"/>
+        <rect x="930" y="130" width="60" height="90" fill="rgba(100,140,160,.25)"/>
+        <ellipse cx="960" cy="175" rx="20" ry="25" fill="rgba(180,100,80,.4)"/>
+        <line x1="930" y1="200" x2="990" y2="140" stroke="rgba(80,60,40,.3)" stroke-width="1.5"/>
+      </g>
+    </svg>
+
+    <!-- Artwork wrapper -->
+    <div id="artwork-wrapper" class="no-image">
+      <div id="artwork-inner">
+        <img id="artwork-img" style="display:none" alt="Fotografi">
+        <div id="artwork-placeholder" onclick="document.getElementById('file-input').click()">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 4v12M8 8l4-4 4 4"/>
+          </svg>
+          <span style="font-size:.7rem;letter-spacing:.1em;text-transform:uppercase">Ladda upp foto</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Measurements -->
+    <svg id="measurements" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div id="grid-overlay"></div>
+    <div id="drag-hint" class="show">Drag bilden för att flytta den på väggen</div>
+
+    <button id="fs-btn" onclick="toggleFullscreen()">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+        <path d="M8 3H5a2 2 0 00-2 2v3M16 3h3a2 2 0 012 2v3M8 21H5a2 2 0 01-2-2v-3M16 21h3a2 2 0 002-2v-3"/>
+      </svg>
+      Fullskärm
+    </button>
+
+    <div id="zoom-bar">
+      <button class="zoom-btn" onclick="zoom(-0.15)">−</button>
+      <span id="zoom-label">100%</span>
+      <button class="zoom-btn" onclick="zoom(0.15)">+</button>
+      <button class="zoom-btn" onclick="zoom(0)" style="font-size:.58rem;width:26px">↺</button>
+    </div>
+
+    <div id="bottom-bar">
+      <strong id="bb-size">30 × 40 cm</strong><br>
+      Betraktningsavstånd: <span id="bb-dist">~1.5 m</span>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────
+const state = {
+  imgSrc: null,
+  wCm: 30, hCm: 40,
+  orientation: 'portrait',
+  frame: 'none',
+  wallColor: '#f0ebe4',
+  showMeas: true,
+  showGrid: false,
+  zoom: 1,
+  posX: 0.5, posY: 0.40,
+  room: 1,           // 1 or 2
+  usingPhotoRoom: false,  // true when room photo loaded ok
+};
+
+// ─── ROOM DIMENSIONS (cm) ────────────────────────────
+// We define the wall area in normalized coords [0..1]
+// For SVG rooms: viewBox 1200×750, wall occupies y=0..570
+// For photo rooms: we define a "wall zone" as fraction of image height
+// Room photo: wall top/bottom/left/right as fraction of image dimensions
+// These are approximate — user can tweak by dragging anyway
+const ROOM_CONFIG = {
+  1: {
+    // Rum 1: beige vägg, sideboard ~68%, olivträd vänster ~18%
+    wallTop: 0.02, wallBottom: 0.67,
+    wallLeft: 0.20, wallRight: 0.92,
+    wallWcm: 500, wallHcm: 250,
+    defaultPosX: 0.52, defaultPosY: 0.38,
+  },
+  2: {
+    // Rum 2: vit vägg, soffa ~60%, bokhylla höger ~82%
+    wallTop: 0.02, wallBottom: 0.60,
+    wallLeft: 0.12, wallRight: 0.80,
+    wallWcm: 500, wallHcm: 250,
+    defaultPosX: 0.48, defaultPosY: 0.38,
+  },
+};
+
+// ─── FRAME DEFS ──────────────────────────────────────
+const FRAMES = {
+  none:   { border: 'none',                  passe: false },
+  black:  { border: '5px solid #111',        passe: false },
+  white:  { border: '5px solid #e8e0d5',     passe: false },
+  oak:    { border: '7px solid #c8a060',     passe: false },
+  walnut: { border: '7px solid #5c3a1e',     passe: false },
+  passe:  { border: '3px solid #2a2a2a',     passe: true  },
+};
+
+// ─── ROOM SWITCHING ──────────────────────────────────
+function switchRoom(n) {
+  state.room = n;
+  state.usingPhotoRoom = false;
+
+  // Update buttons
+  document.getElementById('rbtn1').classList.toggle('active', n === 1);
+  document.getElementById('rbtn2').classList.toggle('active', n === 2);
+
+  // SVG rooms
+  document.getElementById('svg-room1').style.display = n === 1 ? '' : 'none';
+  document.getElementById('svg-room2').style.display = n === 2 ? '' : 'none';
+
+  // Try photo room
+  const photo = document.getElementById('room-photo');
+  photo.style.display = 'none';
+  photo.src = `images/rum${n}.jpg`;
+  photo.onload = () => {
+    photo.style.display = 'block';
+    state.usingPhotoRoom = true;
+    // Hide SVG when photo loaded
+    document.getElementById('room-svg').style.opacity = '0';
+  };
+  photo.onerror = () => {
+    photo.style.display = 'none';
+    state.usingPhotoRoom = false;
+    document.getElementById('room-svg').style.opacity = '1';
+  };
+
+  // Wall color section only relevant for SVG
+  document.getElementById('wall-color-sec').style.opacity = state.usingPhotoRoom ? '0.4' : '1';
+
+  // Reset position to room default
+  const cfg = ROOM_CONFIG[n];
+  state.posX = cfg.defaultPosX || 0.5;
+  state.posY = cfg.defaultPosY || 0.38;
+
+  positionArtwork();
+  saveSettings();
+}
+
+function roomPhotoError(img) {
+  img.style.display = 'none';
+  state.usingPhotoRoom = false;
+  document.getElementById('room-svg').style.opacity = '1';
+}
+
+// ─── SCALING ─────────────────────────────────────────
+// KEY FIX: use a single uniform scale factor based on wall width only
+// so portrait and landscape photos stay correct aspect ratio
+function getScale() {
+  const wrap = document.getElementById('room-wrap');
+  const wRect = wrap.getBoundingClientRect();
+
+  const cfg = ROOM_CONFIG[state.room];
+
+  let wallPixelWidth, wallPixelHeight;
+
+  if (state.usingPhotoRoom) {
+    // Wall zone within the photo
+    wallPixelWidth  = wRect.width  * (cfg.wallRight - cfg.wallLeft);
+    wallPixelHeight = wRect.height * (cfg.wallBottom - cfg.wallTop);
+  } else {
+    // SVG: viewBox 1200×750, wall is 1200×570
+    const svgScale = Math.min(wRect.width / 1200, wRect.height / 750);
+    wallPixelWidth  = 1200 * svgScale;
+    wallPixelHeight = 570  * svgScale;
+  }
+
+  // px per cm — UNIFORM: base on width only so aspect ratio preserved
+  const pxPerCm = wallPixelWidth / cfg.wallWcm;
+
+  return { pxPerCm, wallPixelWidth, wallPixelHeight, wRect };
+}
+
+function getArtworkPx() {
+  const { pxPerCm } = getScale();
+  let wCm = state.wCm, hCm = state.hCm;
+  if (state.orientation === 'landscape') { [wCm, hCm] = [hCm, wCm]; }
+  return {
+    wPx: wCm * pxPerCm * state.zoom,
+    hPx: hCm * pxPerCm * state.zoom,
+  };
+}
+
+function getWallOrigin() {
+  // Returns {left, top} of wall top-left corner in main-relative coords
+  const wrap = document.getElementById('room-wrap');
+  const wRect = wrap.getBoundingClientRect();
+  const main  = document.getElementById('main');
+  const mRect = main.getBoundingClientRect();
+  const cfg   = ROOM_CONFIG[state.room];
+
+  if (state.usingPhotoRoom) {
+    return {
+      left: wRect.left - mRect.left + wRect.width  * cfg.wallLeft,
+      top:  wRect.top  - mRect.top  + wRect.height * cfg.wallTop,
+      w: wRect.width  * (cfg.wallRight - cfg.wallLeft),
+      h: wRect.height * (cfg.wallBottom - cfg.wallTop),
+    };
+  } else {
+    const svgScale = Math.min(wRect.width / 1200, wRect.height / 750);
+    const svgW = 1200 * svgScale;
+    const svgH = 750  * svgScale;
+    // SVG may be centered (xMidYMid)
+    const svgLeft = wRect.left - mRect.left + (wRect.width  - svgW) / 2;
+    const svgTop  = wRect.top  - mRect.top  + (wRect.height - svgH) / 2;
+    return {
+      left: svgLeft,
+      top:  svgTop,
+      w: svgW,
+      h: svgH * (570 / 750),  // wall portion only
+    };
+  }
+}
+
+// ─── POSITION ARTWORK ────────────────────────────────
+function positionArtwork() {
+  const { wPx, hPx } = getArtworkPx();
+  const wall = getWallOrigin();
+
+  const cx = wall.left + wall.w * state.posX;
+  const cy = wall.top  + wall.h * state.posY;
+
+  const left = cx - wPx / 2;
+  const top  = cy - hPx / 2;
+
+  const wrapper = document.getElementById('artwork-wrapper');
+  wrapper.style.width  = wPx + 'px';
+  wrapper.style.height = hPx + 'px';
+  wrapper.style.left   = left + 'px';
+  wrapper.style.top    = top  + 'px';
+
+  applyFrame();
+  updateMeasurements(left, top, wPx, hPx);
+  updateInfo();
+}
+
+function applyFrame() {
+  const inner = document.getElementById('artwork-inner');
+  const f = FRAMES[state.frame];
+  inner.style.border = f.border;
+  inner.style.padding    = f.passe ? '8%' : '0';
+  inner.style.background = f.passe ? '#f2ede8' : 'transparent';
+
+  const wrapper = document.getElementById('artwork-wrapper');
+  wrapper.style.filter = state.imgSrc
+    ? 'drop-shadow(2px 5px 16px rgba(0,0,0,0.42))'
+    : 'none';
+}
+
+// ─── MEASUREMENTS ────────────────────────────────────
+function updateMeasurements(left, top, wPx, hPx) {
+  const svg = document.getElementById('measurements');
+  if (!state.showMeas) { svg.innerHTML = ''; return; }
+
+  let wCm = state.wCm, hCm = state.hCm;
+  if (state.orientation === 'landscape') { [wCm, hCm] = [hCm, wCm]; }
+
+  const off = 16;
+  const cx = left + wPx / 2;
+  const cy = top  + hPx / 2;
+  const ay = top  + hPx + off;
+  const ax = left + wPx + off;
+
+  svg.innerHTML = `
+    <line class="meas-line" x1="${left}" y1="${ay}" x2="${left+wPx}" y2="${ay}"/>
+    <line class="meas-cap"  x1="${left}"    y1="${ay-5}" x2="${left}"    y2="${ay+5}"/>
+    <line class="meas-cap"  x1="${left+wPx}" y1="${ay-5}" x2="${left+wPx}" y2="${ay+5}"/>
+    <text class="meas-text" x="${cx}" y="${ay+14}" text-anchor="middle">${wCm} cm</text>
+    <line class="meas-line" x1="${ax}" y1="${top}" x2="${ax}" y2="${top+hPx}"/>
+    <line class="meas-cap"  x1="${ax-5}" y1="${top}"    x2="${ax+5}" y2="${top}"/>
+    <line class="meas-cap"  x1="${ax-5}" y1="${top+hPx}" x2="${ax+5}" y2="${top+hPx}"/>
+    <text class="meas-text" x="${ax+13}" y="${cy+4}" text-anchor="start">${hCm} cm</text>
+  `;
+}
+
+function updateInfo() {
+  let wCm = state.wCm, hCm = state.hCm;
+  if (state.orientation === 'landscape') { [wCm, hCm] = [hCm, wCm]; }
+  const cfg  = ROOM_CONFIG[state.room];
+  const area = (wCm * hCm) / (cfg.wallWcm * cfg.wallHcm) * 100;
+  const dist = Math.max(wCm, hCm) * 1.5 / 100;
+  document.getElementById('info-size').textContent = `${wCm} × ${hCm} cm`;
+  document.getElementById('info-dist').textContent = `~${dist.toFixed(1)} m`;
+  document.getElementById('info-pct').textContent  = `${area.toFixed(1)}% av vägg`;
+  document.getElementById('bb-size').textContent   = `${wCm} × ${hCm} cm`;
+  document.getElementById('bb-dist').textContent   = `~${dist.toFixed(1)} m`;
+}
+
+// ─── IMAGE UPLOAD ─────────────────────────────────────
+document.getElementById('file-input').addEventListener('change', e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    state.imgSrc = ev.target.result;
+    const img = document.getElementById('artwork-img');
+    img.src = ev.target.result;
+    img.style.display = 'block';
+    document.getElementById('artwork-placeholder').style.display = 'none';
+    document.getElementById('artwork-wrapper').classList.remove('no-image');
+    positionArtwork();
+    setTimeout(() => document.getElementById('drag-hint').classList.remove('show'), 3000);
+  };
+  reader.readAsDataURL(f);
+});
+
+// Drag & drop on upload zone
+const uploadZone = document.getElementById('upload-zone');
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault(); uploadZone.classList.remove('drag');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) {
+    const dt = new DataTransfer(); dt.items.add(f);
+    document.getElementById('file-input').files = dt.files;
+    document.getElementById('file-input').dispatchEvent(new Event('change'));
+  }
+});
+
+// ─── SIZE BUTTONS ────────────────────────────────────
+document.getElementById('size-grid').addEventListener('click', e => {
+  const btn = e.target.closest('.size-btn');
+  if (!btn) return;
+  document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  state.wCm = parseInt(btn.dataset.w);
+  state.hCm = parseInt(btn.dataset.h);
+  document.getElementById('cw').value = '';
+  document.getElementById('ch').value = '';
+  positionArtwork(); saveSettings();
+});
+
+function applyCustom() {
+  const cw = parseInt(document.getElementById('cw').value);
+  const ch = parseInt(document.getElementById('ch').value);
+  if (cw > 0 && ch > 0) {
+    state.wCm = cw; state.hCm = ch;
+    document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+    positionArtwork(); saveSettings();
+  }
+}
+document.getElementById('cw').addEventListener('change', applyCustom);
+document.getElementById('ch').addEventListener('change', applyCustom);
+
+// ─── ORIENTATION ─────────────────────────────────────
+window.setOrientation = o => {
+  state.orientation = o;
+  document.getElementById('btn-portrait').classList.toggle('active',  o === 'portrait');
+  document.getElementById('btn-landscape').classList.toggle('active', o === 'landscape');
+  positionArtwork(); saveSettings();
+};
+
+// ─── FRAME ───────────────────────────────────────────
+document.getElementById('frame-grid').addEventListener('click', e => {
+  const btn = e.target.closest('.frame-btn');
+  if (!btn) return;
+  document.querySelectorAll('.frame-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  state.frame = btn.dataset.frame;
+  applyFrame(); saveSettings();
+});
+
+// ─── WALL COLOR ──────────────────────────────────────
+document.getElementById('wall-colors').addEventListener('click', e => {
+  const sw = e.target.closest('.wswatch');
+  if (!sw) return;
+  document.querySelectorAll('.wswatch').forEach(s => s.classList.remove('active'));
+  sw.classList.add('active');
+  state.wallColor = sw.dataset.color;
+  document.getElementById('svg-wall').setAttribute('fill', state.wallColor);
+  document.getElementById('svg-wall2').setAttribute('fill', state.wallColor);
+  saveSettings();
+});
+
+// ─── TOGGLES ─────────────────────────────────────────
+window.toggleMeas = () => {
+  state.showMeas = !state.showMeas;
+  document.getElementById('t-meas').classList.toggle('on', state.showMeas);
+  positionArtwork();
+};
+window.toggleGrid = () => {
+  state.showGrid = !state.showGrid;
+  document.getElementById('t-grid').classList.toggle('on', state.showGrid);
+  document.getElementById('grid-overlay').classList.toggle('on', state.showGrid);
+};
+
+// ─── ZOOM ────────────────────────────────────────────
+window.zoom = delta => {
+  state.zoom = delta === 0 ? 1 : Math.max(0.3, Math.min(3, state.zoom + delta));
+  document.getElementById('zoom-label').textContent = Math.round(state.zoom * 100) + '%';
+  positionArtwork();
+};
+
+// ─── DRAG ────────────────────────────────────────────
+let dragging = false, dragStartX, dragStartY, dragStartPosX, dragStartPosY;
+const wrapper = document.getElementById('artwork-wrapper');
+
+wrapper.addEventListener('pointerdown', e => {
+  if (wrapper.classList.contains('no-image')) return;
+  dragging = true;
+  dragStartX = e.clientX; dragStartY = e.clientY;
+  dragStartPosX = state.posX; dragStartPosY = state.posY;
+  wrapper.setPointerCapture(e.pointerId);
+  e.preventDefault();
+});
+wrapper.addEventListener('pointermove', e => {
+  if (!dragging) return;
+  const wall = getWallOrigin();
+  state.posX = Math.max(0.05, Math.min(0.95, dragStartPosX + (e.clientX - dragStartX) / wall.w));
+  state.posY = Math.max(0.05, Math.min(0.95, dragStartPosY + (e.clientY - dragStartY) / wall.h));
+  positionArtwork();
+});
+wrapper.addEventListener('pointerup', () => { dragging = false; });
+
+// Pinch zoom
+let lastPinchDist = 0;
+document.getElementById('main').addEventListener('touchstart', e => {
+  if (e.touches.length === 2) lastPinchDist = Math.hypot(
+    e.touches[0].clientX - e.touches[1].clientX,
+    e.touches[0].clientY - e.touches[1].clientY);
+}, { passive: true });
+document.getElementById('main').addEventListener('touchmove', e => {
+  if (e.touches.length === 2) {
+    const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX,
+                         e.touches[0].clientY - e.touches[1].clientY);
+    if (lastPinchDist > 0) {
+      state.zoom = Math.max(0.3, Math.min(3, state.zoom + (d - lastPinchDist) / 300));
+      document.getElementById('zoom-label').textContent = Math.round(state.zoom * 100) + '%';
+      positionArtwork();
+    }
+    lastPinchDist = d;
+  }
+}, { passive: true });
+
+// ─── FULLSCREEN ──────────────────────────────────────
+window.toggleFullscreen = () => {
+  if (!document.fullscreenElement) document.getElementById('main').requestFullscreen?.();
+  else document.exitFullscreen?.();
+};
+
+// ─── RESET ───────────────────────────────────────────
+window.resetAll = () => {
+  state.wCm = 30; state.hCm = 40; state.orientation = 'portrait';
+  state.frame = 'none'; state.zoom = 1; state.posX = 0.5; state.posY = 0.40;
+  document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.size-btn[data-w="30"]').classList.add('active');
+  document.querySelectorAll('.frame-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.frame-btn[data-frame="none"]').classList.add('active');
+  document.getElementById('btn-portrait').classList.add('active');
+  document.getElementById('btn-landscape').classList.remove('active');
+  document.getElementById('zoom-label').textContent = '100%';
+  document.getElementById('cw').value = '';
+  document.getElementById('ch').value = '';
+  positionArtwork();
+};
+
+// ─── SAVE (canvas export) ────────────────────────────
+window.saveImage = function() {
+  const btn = document.getElementById('save-btn');
+  btn.textContent = '⏳ Sparar...';
+  btn.disabled = true;
+
+  const roomWrap = document.getElementById('room-wrap');
+  const rwRect   = roomWrap.getBoundingClientRect();
+  const main     = document.getElementById('main');
+  const mRect    = main.getBoundingClientRect();
+  const SCALE    = 2;
+  const cw = Math.round(rwRect.width * SCALE);
+  const ch = Math.round(rwRect.height * SCALE);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = cw; canvas.height = ch;
+  const ctx = canvas.getContext('2d');
+
+  const drawArtwork = () => {
+    if (!state.imgSrc) { finalize(); return; }
+    const wrapper = document.getElementById('artwork-wrapper');
+    const wrRect  = wrapper.getBoundingClientRect();
+    const relLeft = (wrRect.left - rwRect.left) * SCALE;
+    const relTop  = (wrRect.top  - rwRect.top)  * SCALE;
+    const relW    = wrRect.width  * SCALE;
+    const relH    = wrRect.height * SCALE;
+    const f = FRAMES[state.frame];
+    const m = f.border.match(/(\d+)px/);
+    const fBW = m ? parseInt(m[1]) * SCALE : 0;
+
+    if (f.passe) { ctx.fillStyle = '#f2ede8'; ctx.fillRect(relLeft, relTop, relW, relH); }
+
+    const artImg = new Image();
+    artImg.onload = () => {
+      const pad = f.passe ? relW * 0.08 : 0;
+      ctx.drawImage(artImg, relLeft+pad+fBW, relTop+pad+fBW, relW-pad*2-fBW*2, relH-pad*2-fBW*2);
+      if (f.border !== 'none') {
+        const col = f.border.match(/#[\w]+|rgba?\([^)]+\)/)?.[0] || '#000';
+        ctx.strokeStyle = col; ctx.lineWidth = fBW;
+        ctx.strokeRect(relLeft+fBW/2, relTop+fBW/2, relW-fBW, relH-fBW);
+      }
+      finalize();
+    };
+    artImg.src = state.imgSrc;
+  };
+
+  const finalize = () => {
+    canvas.toBlob(blob => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'tavelvagg.png'; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      btn.textContent = '⬇ Spara bild'; btn.disabled = false;
+    }, 'image/png');
+  };
+
+  if (state.usingPhotoRoom) {
+    // Draw photo room
+    const photo = document.getElementById('room-photo');
+    const pImg = new Image();
+    pImg.crossOrigin = 'anonymous';
+    pImg.onload = () => { ctx.drawImage(pImg, 0, 0, cw, ch); drawArtwork(); };
+    pImg.onerror = () => { ctx.fillStyle = '#f0ebe4'; ctx.fillRect(0,0,cw,ch); drawArtwork(); };
+    pImg.src = photo.src;
+  } else {
+    // Draw SVG room
+    const svg = document.getElementById('room-svg');
+    const svgClone = svg.cloneNode(true);
+    svgClone.setAttribute('width', rwRect.width);
+    svgClone.setAttribute('height', rwRect.height);
+    const svgUrl = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(svgClone)], { type:'image/svg+xml' }));
+    const sImg = new Image();
+    sImg.onload = () => { ctx.drawImage(sImg, 0, 0, cw, ch); URL.revokeObjectURL(svgUrl); drawArtwork(); };
+    sImg.onerror = () => { URL.revokeObjectURL(svgUrl); drawArtwork(); };
+    sImg.src = svgUrl;
+  }
+};
+
+// ─── LOCALSTORAGE ────────────────────────────────────
+function saveSettings() {
+  try {
+    localStorage.setItem('tavelvagg2', JSON.stringify({
+      wCm: state.wCm, hCm: state.hCm, orientation: state.orientation,
+      frame: state.frame, wallColor: state.wallColor, room: state.room,
+    }));
+  } catch(e) {}
+}
+
+function loadSettings() {
+  try {
+    const s = JSON.parse(localStorage.getItem('tavelvagg2') || '{}');
+    if (s.wCm) state.wCm = s.wCm;
+    if (s.hCm) state.hCm = s.hCm;
+    if (s.orientation) state.orientation = s.orientation;
+    if (s.frame) state.frame = s.frame;
+    if (s.wallColor) {
+      state.wallColor = s.wallColor;
+      document.getElementById('svg-wall').setAttribute('fill', s.wallColor);
+      document.getElementById('svg-wall2').setAttribute('fill', s.wallColor);
+      document.querySelectorAll('.wswatch').forEach(sw => sw.classList.toggle('active', sw.dataset.color === s.wallColor));
+    }
+    const matchBtn = document.querySelector(`.size-btn[data-w="${state.wCm}"][data-h="${state.hCm}"]`);
+    document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+    if (matchBtn) matchBtn.classList.add('active');
+    document.querySelectorAll('.frame-btn').forEach(b => b.classList.remove('active'));
+    const fBtn = document.querySelector(`.frame-btn[data-frame="${state.frame}"]`);
+    if (fBtn) fBtn.classList.add('active');
+    setOrientation(state.orientation);
+    if (s.room) switchRoom(s.room);
+  } catch(e) {}
+}
+
+// ─── INIT ────────────────────────────────────────────
+window.addEventListener('load', () => {
+  // Try to load room 1 photo on start
+  const photo = document.getElementById('room-photo');
+  photo.onload = () => {
+    photo.style.display = 'block';
+    state.usingPhotoRoom = true;
+    document.getElementById('room-svg').style.opacity = '0';
+    positionArtwork();
+  };
+  photo.onerror = () => {
+    photo.style.display = 'none';
+    state.usingPhotoRoom = false;
+    document.getElementById('room-svg').style.opacity = '1';
+    positionArtwork();
+  };
+  photo.src = 'images/rum1.jpg';
+
+  loadSettings();
+  setTimeout(positionArtwork, 120);
+  setTimeout(() => document.getElementById('drag-hint').classList.remove('show'), 5000);
+});
+
+window.addEventListener('resize', positionArtwork);
+</script>
+</body>
+</html>
