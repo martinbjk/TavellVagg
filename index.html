@@ -2,7 +2,7 @@
 <html lang="sv">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Tavelvägg – Förhandsvisa ditt fotografi</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
@@ -802,18 +802,26 @@ const state = {
 // These are approximate — user can tweak by dragging anyway
 const ROOM_CONFIG = {
   1: {
-    // Rum 1: beige vägg, sideboard ~68%, olivträd vänster ~18%
-    wallTop: 0.02, wallBottom: 0.67,
-    wallLeft: 0.20, wallRight: 0.92,
+    // Rum 1: ljust (soffa + bokhylla höger)
+    // Vägg: fönster+gardin tar vänster ~14%, bokhylla tar höger ~13%
+    // Soffan börjar vid ~57% av bildhöjden
+    // Dessa fraktioner gäller bildens NATURLIGA dimensioner (16:9)
+    wallTop: 0.01, wallBottom: 0.57,
+    wallLeft: 0.14, wallRight: 0.87,
     wallWcm: 500, wallHcm: 250,
-    defaultPosX: 0.52, defaultPosY: 0.38,
+    // Naturlig bildaspekt (alla ChatGPT-rum är 16:9 = 1456x816)
+    imgAspect: 16/9,
+    defaultPosX: 0.50, defaultPosY: 0.35,
   },
   2: {
-    // Rum 2: vit vägg, soffa ~60%, bokhylla höger ~82%
-    wallTop: 0.02, wallBottom: 0.60,
-    wallLeft: 0.12, wallRight: 0.80,
+    // Rum 2: mörkt (sideboard + olivträd vänster + fåtölj höger)
+    // Olivträdet tar vänster ~22%, fåtöljen/lampan tar höger ~8%
+    // Sideboardet börjar vid ~62% av bildhöjden
+    wallTop: 0.01, wallBottom: 0.62,
+    wallLeft: 0.22, wallRight: 0.92,
     wallWcm: 500, wallHcm: 250,
-    defaultPosX: 0.48, defaultPosY: 0.38,
+    imgAspect: 16/9,
+    defaultPosX: 0.52, defaultPosY: 0.36,
   },
 };
 
@@ -875,31 +883,55 @@ function roomPhotoError(img) {
 }
 
 // ─── SCALING ─────────────────────────────────────────
-// KEY FIX: use a single uniform scale factor based on wall width only
-// so portrait and landscape photos stay correct aspect ratio
+// For photo rooms with object-fit:cover we must calculate the ACTUAL
+// rendered image dimensions, not just the container dimensions.
+// object-fit:cover scales the image so it fills the container,
+// cropping whichever axis overflows. We compute this manually.
+
+function getCoverRenderedRect(containerW, containerH, imgAspect) {
+  // Returns {imgW, imgH, offsetX, offsetY} of the rendered image
+  // within a container of containerW x containerH, using cover logic
+  const containerAspect = containerW / containerH;
+  let imgW, imgH, offsetX, offsetY;
+  if (containerAspect > imgAspect) {
+    // Container wider than image aspect → fit width, crop height
+    imgW = containerW;
+    imgH = containerW / imgAspect;
+    offsetX = 0;
+    offsetY = (containerH - imgH) / 2; // negative = image extends above/below
+  } else {
+    // Container taller than image aspect → fit height, crop width
+    imgH = containerH;
+    imgW = containerH * imgAspect;
+    offsetX = (containerW - imgW) / 2; // negative = image extends left/right
+    offsetY = 0;
+  }
+  return { imgW, imgH, offsetX, offsetY };
+}
+
 function getScale() {
   const wrap = document.getElementById('room-wrap');
   const wRect = wrap.getBoundingClientRect();
-
   const cfg = ROOM_CONFIG[state.room];
 
-  let wallPixelWidth, wallPixelHeight;
+  let wallPixelWidth;
 
   if (state.usingPhotoRoom) {
-    // Wall zone within the photo
-    wallPixelWidth  = wRect.width  * (cfg.wallRight - cfg.wallLeft);
-    wallPixelHeight = wRect.height * (cfg.wallBottom - cfg.wallTop);
+    // Compute actual rendered image size accounting for object-fit:cover
+    const { imgW, imgH, offsetX, offsetY } = getCoverRenderedRect(
+      wRect.width, wRect.height, cfg.imgAspect || 16/9
+    );
+    // Wall pixel width = fraction of rendered image width
+    wallPixelWidth = imgW * (cfg.wallRight - cfg.wallLeft);
   } else {
-    // SVG: viewBox 1200×750, wall is 1200×570
+    // SVG: viewBox 1200×750, wall is 1200 wide
     const svgScale = Math.min(wRect.width / 1200, wRect.height / 750);
-    wallPixelWidth  = 1200 * svgScale;
-    wallPixelHeight = 570  * svgScale;
+    wallPixelWidth = 1200 * svgScale;
   }
 
-  // px per cm — UNIFORM: base on width only so aspect ratio preserved
+  // pxPerCm based on wall width only — keeps aspect ratio correct
   const pxPerCm = wallPixelWidth / cfg.wallWcm;
-
-  return { pxPerCm, wallPixelWidth, wallPixelHeight, wRect };
+  return { pxPerCm, wRect };
 }
 
 function getArtworkPx() {
@@ -913,7 +945,6 @@ function getArtworkPx() {
 }
 
 function getWallOrigin() {
-  // Returns {left, top} of wall top-left corner in main-relative coords
   const wrap = document.getElementById('room-wrap');
   const wRect = wrap.getBoundingClientRect();
   const main  = document.getElementById('main');
@@ -921,24 +952,30 @@ function getWallOrigin() {
   const cfg   = ROOM_CONFIG[state.room];
 
   if (state.usingPhotoRoom) {
+    // Account for object-fit:cover — find where rendered image starts
+    const { imgW, imgH, offsetX, offsetY } = getCoverRenderedRect(
+      wRect.width, wRect.height, cfg.imgAspect || 16/9
+    );
+    // Wall origin in main-relative coords
+    const imgLeft = wRect.left - mRect.left + offsetX;
+    const imgTop  = wRect.top  - mRect.top  + offsetY;
     return {
-      left: wRect.left - mRect.left + wRect.width  * cfg.wallLeft,
-      top:  wRect.top  - mRect.top  + wRect.height * cfg.wallTop,
-      w: wRect.width  * (cfg.wallRight - cfg.wallLeft),
-      h: wRect.height * (cfg.wallBottom - cfg.wallTop),
+      left: imgLeft + imgW * cfg.wallLeft,
+      top:  imgTop  + imgH * cfg.wallTop,
+      w:    imgW * (cfg.wallRight  - cfg.wallLeft),
+      h:    imgH * (cfg.wallBottom - cfg.wallTop),
     };
   } else {
     const svgScale = Math.min(wRect.width / 1200, wRect.height / 750);
     const svgW = 1200 * svgScale;
     const svgH = 750  * svgScale;
-    // SVG may be centered (xMidYMid)
     const svgLeft = wRect.left - mRect.left + (wRect.width  - svgW) / 2;
     const svgTop  = wRect.top  - mRect.top  + (wRect.height - svgH) / 2;
     return {
       left: svgLeft,
       top:  svgTop,
-      w: svgW,
-      h: svgH * (570 / 750),  // wall portion only
+      w:    svgW,
+      h:    svgH * (570 / 750),
     };
   }
 }
