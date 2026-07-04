@@ -273,15 +273,124 @@ html, body { height: 100%; overflow: hidden; background: var(--coal); color: var
 }
 #drag-hint.show { opacity: 1; }
 
-/* Mobile */
-@media (max-width: 600px) {
-  :root { --panel-w: 160px; }
-  .size-grid { grid-template-columns: 1fr; }
-  .frame-grid { grid-template-columns: repeat(2,1fr); }
+/* ── MOBILE (under 12 tum / 1150px) ── */
+@media (max-width: 1150px) {
+
+  /* App becomes a stacked view controller */
+  #app {
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* SCREEN 1: Settings — full screen, scrollable */
+  #sidebar {
+    width: 100%;
+    min-width: 100%;
+    height: 100vh;
+    border-right: none;
+    border-bottom: none;
+    overflow-y: auto;
+    position: absolute;
+    top: 0; left: 0;
+    z-index: 20;
+    transform: translateX(0);
+    transition: transform 0.35s cubic-bezier(.4,0,.2,1);
+    padding-bottom: 100px; /* space for the CTA button */
+  }
+  #sidebar.slide-out {
+    transform: translateX(-100%);
+    pointer-events: none;
+  }
+
+  /* SCREEN 2: Room view — full screen */
+  #main {
+    width: 100%;
+    height: 100vh;
+    position: absolute;
+    top: 0; left: 0;
+    z-index: 10;
+    transform: translateX(100%);
+    transition: transform 0.35s cubic-bezier(.4,0,.2,1);
+  }
+  #main.slide-in {
+    transform: translateX(0);
+  }
+
+  /* CTA button fixed at bottom of sidebar */
+  #mobile-cta {
+    display: flex !important;
+  }
+
+  /* Back button in room view */
+  #mobile-back {
+    display: flex !important;
+  }
+
+  /* Hide fullscreen button on mobile */
+  #fs-btn { display: none; }
+
+  /* Bigger touch targets */
+  .size-btn { padding: 10px 4px; }
+  .size-btn .dims { font-size: 0.8rem; }
+  .orient-btn { padding: 10px 4px; }
+  .frame-btn { padding: 10px 3px; }
+  .room-btn { padding: 8px 4px; }
+
+  /* Sidebar grid — single column on narrow */
+  .size-grid { grid-template-columns: repeat(2, 1fr); }
+  .frame-grid { grid-template-columns: repeat(3, 1fr); }
+
+  /* Bottom bar — smaller on mobile */
+  #bottom-bar { font-size: 0.58rem; padding: 6px 10px; }
+  #zoom-bar { bottom: 14px; right: 14px; }
 }
-@media (max-width: 420px) {
-  :root { --panel-w: 140px; }
+
+@media (max-width: 480px) {
+  .size-grid { grid-template-columns: repeat(2, 1fr); }
+  .frame-grid { grid-template-columns: repeat(2, 1fr); }
 }
+/* Mobile CTA + Back — hidden on desktop */
+#mobile-cta {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 30;
+  padding: 14px 20px;
+  background: linear-gradient(to top, var(--coal) 70%, transparent);
+}
+#mobile-cta button {
+  width: 100%;
+  background: var(--gold);
+  border: none;
+  border-radius: 6px;
+  color: #111;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.05rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  padding: 14px;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+#mobile-back {
+  display: none;
+  position: absolute;
+  top: 14px; left: 14px;
+  z-index: 20;
+  background: rgba(20,20,20,.88);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 0.78rem;
+  padding: 8px 14px;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  align-items: center;
+  gap: 6px;
+}
+#mobile-back:active { background: rgba(40,40,40,.95); }
 </style>
 </head>
 <body>
@@ -413,8 +522,15 @@ html, body { height: 100%; overflow: hidden; background: var(--coal); color: var
   <button id="save-btn" onclick="saveImage()">⬇ Spara bild</button>
 </aside>
 
+<!-- Mobile CTA: fixed at bottom when sidebar visible -->
+<div id="mobile-cta">
+  <button onclick="showRoom()">Visa på vägg →</button>
+</div>
+
 <!-- ── MAIN ── -->
 <div id="main">
+  <!-- Mobile back button -->
+  <button id="mobile-back" onclick="showSettings()">← Inställningar</button>
   <div id="room-wrap">
 
     <!-- Photo rooms (shown when image loads) -->
@@ -1205,7 +1321,46 @@ window.addEventListener('load', () => {
   setTimeout(() => document.getElementById('drag-hint').classList.remove('show'), 5000);
 });
 
-window.addEventListener('resize', positionArtwork);
+window.addEventListener('resize', () => {
+  positionArtwork();
+});
+
+// ─── MOBILE NAVIGATION ────────────────────────────────
+const MOBILE_BP = 1150;
+
+function isMobile() {
+  return window.innerWidth < MOBILE_BP;
+}
+
+window.showRoom = function() {
+  if (!isMobile()) return;
+  document.getElementById('sidebar').classList.add('slide-out');
+  document.getElementById('main').classList.add('slide-in');
+  document.getElementById('mobile-cta').style.opacity = '0';
+  document.getElementById('mobile-cta').style.pointerEvents = 'none';
+  // Recalculate after transition so main has full width
+  setTimeout(() => {
+    positionArtwork();
+    document.getElementById('drag-hint').classList.add('show');
+    setTimeout(() => document.getElementById('drag-hint').classList.remove('show'), 3500);
+  }, 370);
+};
+
+window.showSettings = function() {
+  if (!isMobile()) return;
+  document.getElementById('sidebar').classList.remove('slide-out');
+  document.getElementById('main').classList.remove('slide-in');
+  document.getElementById('mobile-cta').style.opacity = '1';
+  document.getElementById('mobile-cta').style.pointerEvents = '';
+};
+
+// On desktop resize back, clean up mobile classes
+window.addEventListener('resize', () => {
+  if (window.innerWidth >= MOBILE_BP) {
+    document.getElementById('sidebar').classList.remove('slide-out');
+    document.getElementById('main').classList.remove('slide-in');
+  }
+});
 </script>
 </body>
 </html>
