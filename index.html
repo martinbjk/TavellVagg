@@ -121,11 +121,7 @@ html, body { height: 100%; height: 100dvh; overflow: hidden; background: var(--c
 
 /* Wall colors */
 .wall-colors { display: flex; gap: 5px; flex-wrap: wrap; }
-.wswatch {
-  width: 26px; height: 26px; border-radius: 50%; cursor: pointer;
-  border: 2px solid transparent; transition: all .15s; position: relative;
-}
-.wswatch.active { border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold); }
+
 
 /* Toggles */
 .toggle-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px; }
@@ -488,17 +484,7 @@ html, body { height: 100%; height: 100dvh; overflow: hidden; background: var(--c
     </div>
   </div>
 
-  <!-- Wall color (only for SVG rooms) -->
-  <div class="sec" id="wall-color-sec">
-    <div class="sec-label">Väggfärg (SVG)</div>
-    <div class="wall-colors" id="wall-colors">
-      <div class="wswatch active" style="background:#f0ebe4" data-color="#f0ebe4"></div>
-      <div class="wswatch" style="background:#e0dbd2" data-color="#e0dbd2"></div>
-      <div class="wswatch" style="background:#cbc5bc" data-color="#cbc5bc"></div>
-      <div class="wswatch" style="background:#2c3440" data-color="#2c3440"></div>
-      <div class="wswatch" style="background:#1e1e1e" data-color="#1e1e1e"></div>
-    </div>
-  </div>
+
 
   <!-- Toggles -->
   <div class="sec">
@@ -787,7 +773,6 @@ const state = {
   wCm: 30, hCm: 40,
   orientation: 'portrait',
   frame: 'none',
-  wallColor: '#f0ebe4',
   showMeas: true,
   showGrid: false,
   zoom: 1,
@@ -866,8 +851,7 @@ function switchRoom(n) {
     document.getElementById('room-svg').style.opacity = '1';
   };
 
-  // Wall color section only relevant for SVG
-  document.getElementById('wall-color-sec').style.opacity = state.usingPhotoRoom ? '0.4' : '1';
+
 
   // Reset position to room default
   const cfg = ROOM_CONFIG[n];
@@ -1131,17 +1115,7 @@ document.getElementById('frame-grid').addEventListener('click', e => {
   applyFrame(); saveSettings();
 });
 
-// ─── WALL COLOR ──────────────────────────────────────
-document.getElementById('wall-colors').addEventListener('click', e => {
-  const sw = e.target.closest('.wswatch');
-  if (!sw) return;
-  document.querySelectorAll('.wswatch').forEach(s => s.classList.remove('active'));
-  sw.classList.add('active');
-  state.wallColor = sw.dataset.color;
-  document.getElementById('svg-wall').setAttribute('fill', state.wallColor);
-  document.getElementById('svg-wall2').setAttribute('fill', state.wallColor);
-  saveSettings();
-});
+
 
 // ─── TOGGLES ─────────────────────────────────────────
 window.toggleMeas = () => {
@@ -1394,7 +1368,7 @@ function saveSettings() {
   try {
     localStorage.setItem('tavelvagg2', JSON.stringify({
       wCm: state.wCm, hCm: state.hCm, orientation: state.orientation,
-      frame: state.frame, wallColor: state.wallColor, room: state.room,
+      frame: state.frame, room: state.room,
     }));
   } catch(e) {}
 }
@@ -1406,12 +1380,7 @@ function loadSettings() {
     if (s.hCm) state.hCm = s.hCm;
     if (s.orientation) state.orientation = s.orientation;
     if (s.frame) state.frame = s.frame;
-    if (s.wallColor) {
-      state.wallColor = s.wallColor;
-      document.getElementById('svg-wall').setAttribute('fill', s.wallColor);
-      document.getElementById('svg-wall2').setAttribute('fill', s.wallColor);
-      document.querySelectorAll('.wswatch').forEach(sw => sw.classList.toggle('active', sw.dataset.color === s.wallColor));
-    }
+
     const matchBtn = document.querySelector(`.size-btn[data-w="${state.wCm}"][data-h="${state.hCm}"]`);
     document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
     if (matchBtn) matchBtn.classList.add('active');
